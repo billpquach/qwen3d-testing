@@ -65,15 +65,18 @@ Inside of it, download the following:
 uvx --from huggingface_hub huggingface-cli download katefgroup/UniVLG_ScanNet_MonoDepth --local-dir data/datasets_2d/coco_3d_moge
 ```
 
-# Set the path to the setup datasets in the main.sh script. Specifically:
-CKPTS_PATH -- path to checkpoints
-PRECOMPUTED_SCANNET_PATH -- path to image/text embeddings and other metadata for scannet
-DETECTRON2_DATASETS_2D -- path to datasets_2d
-DETECTRON2_DATASETS -- path to the folder which contains the RGB-D images from scannet and matterport3D datasets
-REF_DATASET -- path to the `refer_it_3d` folder
-SCANNET200_DATA_DIR -- path to the `train_validation_database.yaml` of `scannet200` dataset
-MATTERPORT_DATA_DIR -- path to the `train_validation_database.yaml` of `matterport3d` dataset
-OUTPUT_DIR_PREFIX -- path to the folder which will store your logs and checkpoints
+## Dataset & checkpoint paths
+Set these variables in `main.sh` to point at your local setup:
+| Variable | Description |
+|---|---|
+| `CKPTS_PATH` | Path to checkpoints |
+| `PRECOMPUTED_SCANNET_PATH` | Path to image/text embeddings and other ScanNet metadata |
+| `DETECTRON2_DATASETS_2D` | Path to `datasets_2d` |
+| `DETECTRON2_DATASETS` | Path to the folder containing RGB-D images from ScanNet and Matterport3D |
+| `REF_DATASET` | Path to the `refer_it_3d` folder |
+| `SCANNET200_DATA_DIR` | Path to ScanNet200's `train_validation_database.yaml` |
+| `MATTERPORT_DATA_DIR` | Path to Matterport3D's `train_validation_database.yaml` |
+| `OUTPUT_DIR_PREFIX` | Path to the folder for logs and checkpoints |
 
 ### LLaVA-Instruct-150K
 
