@@ -201,6 +201,7 @@ source scripts/setup.sh
 configure_local
 BS=1 EVAL_ONLY=1 NUM_VAL_DATALOADERS=1 NUM_DATALOADERS=2 $PREFIX "${PREFIX_ARGS[@]}" scripts/main_qwen.sh \
 GENERATION True \
+MAX_FRAME_NUM <120 for 3B model | 50 for 7B model> \
 DATASETS.TRAIN "('scanqa_ref_scannet_train_single','sqa3d_ref_scannet_train_single',)" \
 DATASETS.TEST "('scanqa_ref_scannet_val_single_batched','sqa3d_ref_scannet_val_single_batched',)"
 ```
