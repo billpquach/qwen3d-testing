@@ -34,6 +34,7 @@ import torch.nn as nn
 from PIL import Image
 
 GB = 1024 ** 3
+FOUND_SCORE = 0.5   # below this the best candidate is "not found" (absent laptop scored 0.26, real objects 0.79-0.95)
 RELATION_WORDS = r"\b(next to|beside|near|on top of|on|under|below|above|behind|in front of|left of|right of|" \
                  r"to the left|to the right|between|closest to|farthest from|inside|in|at|by|with|that|which)\b"
 
@@ -140,7 +141,7 @@ def prepare_scene(model, cfg, scene, n_frames, max_depth):
     all_ids = sorted(int(p.stem) for p in (scene / "color").glob("*.jpg"))
     pick = sorted(set(np.linspace(0, len(all_ids) - 1, min(n_frames, len(all_ids))).round().astype(int)))
     frames = [load_frame(scene, all_ids[i]) for i in pick]
-    T = {"load": time.time() - t0}
+    timing = {"load": time.time() - t0}
 
     images = [torch.as_tensor(f[0].transpose(2, 0, 1).copy()) for f in frames]
     depths = [torch.from_numpy(f[1]) for f in frames]
@@ -156,11 +157,11 @@ def prepare_scene(model, cfg, scene, n_frames, max_depth):
         align_matrix=None, vil3d=cfg.VIL3D, scales=cfg.MULTIVIEW_XYZ_SCALES,
         min_pixel=cfg.INPUT.MIN_PIXEL, max_pixel=cfg.INPUT.MAX_PIXEL)
 
-    T["3d"] = time.time() - t0 - sum(T.values())
+    timing["3d"] = time.time() - t0 - sum(timing.values())
     processor = AutoProcessor.from_pretrained(cfg.QWEN_MODEL, min_pixels=cfg.INPUT.MIN_PIXEL,
                                               max_pixels=cfg.INPUT.MAX_PIXEL).image_processor
     pv_list, grid_list = qwen_preprocess_frames(processor, images)
-    T["preprocess"] = time.time() - t0 - sum(T.values())
+    timing["preprocess"] = time.time() - t0 - sum(timing.values())
 
     # ViT one frame at a time: identical output (attention is per image), much less memory.
     feats = []
@@ -168,7 +169,7 @@ def prepare_scene(model, cfg, scene, n_frames, max_depth):
         feats.append(model.visual(pv.to(dev).to(model.qwen_model.dtype), grid_thw=grid.view(1, 3).to(dev)))
     featurecloud = torch.cat(feats, 0)
     torch.cuda.synchronize()
-    T["vit"] = time.time() - t0 - sum(T.values())
+    timing["vit"] = time.time() - t0 - sum(timing.values())
 
     xyz = [torch.stack([s]).to(dev) for s in multi_scale_xyz]  # [1, V, h, w, 3] per scale
     p2v = multiscsale_voxelize(xyz, cfg.INPUT.VOXEL_SIZE[::-1])
@@ -183,7 +184,7 @@ def prepare_scene(model, cfg, scene, n_frames, max_depth):
 
     # Dense target cloud ("ghost points"): high-confidence LiDAR from every converted frame,
     # 1 cm grid, kept only where Qwen has tokens nearby.
-    T["tokens"] = time.time() - t0 - sum(T.values())
+    timing["tokens"] = time.time() - t0 - sum(timing.values())
     dense = []
     for k in all_ids:
         _, d, c, K, T = load_frame(scene, k)
@@ -204,8 +205,8 @@ def prepare_scene(model, cfg, scene, n_frames, max_depth):
     segments = torch.arange(tpc_vox.shape[1], device=dev)[None]
 
     torch.cuda.synchronize()
-    T["dense"] = time.time() - t0 - sum(T.values())
-    print("prep breakdown: " + ", ".join(f"{k} {x:.1f}s" for k, x in T.items()))
+    timing["dense"] = time.time() - t0 - sum(timing.values())
+    print("prep breakdown: " + ", ".join(f"{k} {x:.1f}s" for k, x in timing.items()))
     print(f"scene: {v} frames ({w}x{h}) -> {featurecloud.shape[1]} point tokens (5 cm), "
           f"{len(dense)} dense points / {tpc_vox.shape[1]} 2 cm voxels, prepared in {time.time() - t0:.1f} s")
     return dict(featurecloud=featurecloud, pointcloud=pointcloud, pixel_indices=pixel_indices, v=v,
@@ -214,19 +215,29 @@ def prepare_scene(model, cfg, scene, n_frames, max_depth):
 
 
 # ----------------------------------------------------------------------------- query
+def default_target(query):
+    """Words before the first relation word, minus a leading article: 'the mug next to the ball' -> 'mug'."""
+    target = re.split(RELATION_WORDS, query, maxsplit=1, flags=re.I)[0].strip() or query
+    return re.sub(r"^(the|a|an)\s+", "", target, flags=re.I) or target
+
+
 def target_token_ids(tokenizer, query, target):
-    """Token positions (within the sentence) of the target phrase; the decoder scores against these."""
+    """Token positions (within the sentence) of the target phrase; the decoder scores against these.
+    Returns (positions, target_used, note). Scoring against the whole sentence would also reward the
+    anchor ("ball" in "the mug next to the ball"), so a --target that isn't in the query falls back
+    to the default target instead."""
+    note = None
+    if target and target.lower() not in query.lower():
+        note = f"--target '{target}' is not in the query, used '{default_target(query)}' instead"
+        print(f"  WARNING: {note}")
+        target = None
     if not target:
-        target = re.split(RELATION_WORDS, query, maxsplit=1, flags=re.I)[0].strip() or query
-        target = re.sub(r"^(the|a|an)\s+", "", target, flags=re.I) or target
+        target = default_target(query)
     start = query.lower().find(target.lower())
-    if start < 0:
-        print(f"  (target '{target}' not found in query, scoring against the whole sentence)")
-        return None, query
     end = start + len(target)
     enc = tokenizer(query, return_offsets_mapping=True, add_special_tokens=False)
     ids = [i for i, (a, b) in enumerate(enc["offset_mapping"]) if a < end and b > start]
-    return ids, target
+    return ids, target, note
 
 
 @torch.no_grad()
@@ -281,9 +292,10 @@ def ground(model, cfg, S, query, target=None):
     logits = outputs["pred_logits"][0].float().sigmoid()   # [100 queries, sentence tokens]
     masks = outputs["pred_masks"][0].float()               # [100 queries, 2 cm voxels]
 
-    pos, target_used = target_token_ids(tok, query, target)
+    pos, target_used, target_note = target_token_ids(tok, query, target)
     n_text = ends[0].item() - starts[0].item()
-    if pos is None or max(pos) >= n_text:
+    if not pos or max(pos) >= n_text:
+        target_note = (target_note or '') + ' (target tokens not found, scored the whole sentence)'
         pos = list(range(n_text))
     scores = logits[:, pos].mean(-1)
     order = scores.argsort(descending=True)
@@ -295,7 +307,7 @@ def ground(model, cfg, S, query, target=None):
     for q in order[:5].tolist():
         vm = masks[q].sigmoid() > 0.5
         cands.append(dict(score=scores[q].item(), point_mask=vm[t_p2v].cpu().numpy()))
-    return dict(query=query, target=target_used, target_tokens=[tok.decode([ids[0, starts[0] + p].item()]) for p in pos],
+    return dict(query=query, target=target_used, target_note=target_note, target_tokens=[tok.decode([ids[0, starts[0] + p].item()]) for p in pos],
                 cands=cands, seconds=dt, peak_gb=torch.cuda.max_memory_allocated() / GB, n_tokens=L)
 
 
@@ -313,7 +325,8 @@ def save_result(scene, S, R, world_from_arkit):
     pts = dense[best["point_mask"]]
 
     summary = dict(query=R["query"], target=R["target"], target_tokens=R["target_tokens"],
-                   score=round(best["score"], 4), top5_scores=[round(c["score"], 4) for c in R["cands"]],
+                   **({"target_note": R["target_note"]} if R.get("target_note") else {}),
+                   found=bool(best["score"] >= FOUND_SCORE), score=round(best["score"], 4), top5_scores=[round(c["score"], 4) for c in R["cands"]],
                    n_points=int(len(pts)), seconds=round(R["seconds"], 2), peak_gpu_gb=round(R["peak_gb"], 2),
                    llm_tokens=R["n_tokens"])
     if len(pts):

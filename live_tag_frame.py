@@ -11,6 +11,10 @@ A fixed tag should stay put; movement = ARKit drift + tag-pose noise.
 
 While it runs: start ~1 m from the tag, walk slowly in an arc around the table, keep the tag in
 view most of the time. It prints your headset position in tag coordinates as you move.
+Turn away from the table for a few seconds in the middle and then look back: any pause of 2 s or
+more without the tag is reported as a "look-away", with how far the tag estimate jumped when it
+came back into view (the demo's object-permanence moment). Every detection is saved to
+tag_test.csv.
 """
 import argparse
 import json
@@ -40,6 +44,18 @@ def rot_angle_deg(R):
     return np.degrees(np.arccos(np.clip((np.trace(R) - 1) / 2, -1, 1)))
 
 
+def lookaway_jumps(times, positions, min_gap_s=2.0, n=5):
+    """For every gap of min_gap_s or more between tag detections, compare the tag position just
+    before the gap (median of the last n detections) with just after (median of the next n)."""
+    times, positions = np.asarray(times), np.asarray(positions)
+    out = []
+    for i in np.nonzero(np.diff(times) >= min_gap_s)[0]:
+        before = np.median(positions[max(0, i - n + 1): i + 1], axis=0)
+        after = np.median(positions[i + 1: i + 1 + n], axis=0)
+        out.append((float(times[i]), float(times[i + 1] - times[i]), float(np.linalg.norm(after - before))))
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("seconds", nargs="?", type=float, default=30)
@@ -58,7 +74,7 @@ def main():
     s.connect(devs[0])
 
     det = Detector(families="tag36h11", quad_decimate=2.0, nthreads=4)
-    world_tag, cam_in_tag, dists, n, t0, last_print = [], [], [], 0, time.time(), 0
+    world_tag, cam_in_tag, dists, det_t, cam_w, n, t0, last_print = [], [], [], [], [], 0, time.time(), 0
     print(f"running {args.seconds:.0f} s, looking for tag36h11 id {args.tag_id} ({args.tag_size} m)...")
     while time.time() - t0 < args.seconds and not stopped.is_set():
         if not new_frame.wait(timeout=5):
@@ -81,6 +97,8 @@ def main():
         T_w_tag = T_w_cam @ T_cam_tag                                     # tag -> ARKit world
         world_tag.append(T_w_tag)
         dists.append(float(np.linalg.norm(d.pose_t)))
+        det_t.append(time.time() - t0)
+        cam_w.append(T_w_cam[:3, 3].copy())
         c = np.linalg.inv(T_w_tag) @ T_w_cam[:, 3]                        # camera position in tag frame
         cam_in_tag.append(c[:3])
         if time.time() - last_print > 1.0:
@@ -105,6 +123,15 @@ def main():
         print(f"tag position spread: median {np.median(dev) * 100:.1f} cm, 95th pct {np.percentile(dev, 95) * 100:.1f} cm, "
               f"max {dev.max() * 100:.1f} cm")
         print(f"tag orientation spread: median {np.median(ang):.1f} deg, 95th pct {np.percentile(ang, 95):.1f} deg")
+        jumps = lookaway_jumps(det_t, P)
+        if jumps:
+            for k, (at, gap, jump) in enumerate(jumps, 1):
+                print(f"look-away {k}: tag out of view {gap:.1f} s (from t={at:.1f} s); "
+                      f"on return the tag estimate had moved {jump * 100:.1f} cm")
+        else:
+            print("look-away: none detected (the tag never left view for 2 s or more)")
+        np.savetxt("tag_test.csv", np.c_[det_t, P, np.array(cam_w), dists], delimiter=",", fmt="%.4f",
+                   header="t_s,tag_x,tag_y,tag_z,cam_x,cam_y,cam_z,tag_dist_m (ARKit world, metres)", comments="")
         p95 = np.percentile(dev, 95)
         print("VERDICT:", "STABLE (< 2 cm): one anchor is enough" if p95 < 0.02 else
               "OK (2-5 cm): re-anchor whenever the tag is in view" if p95 < 0.05 else
@@ -113,7 +140,7 @@ def main():
         json.dump({"tag_id": args.tag_id, "tag_size_m": args.tag_size, "world_from_tag": T_med.tolist(),
                    "note": "ARKit world <- tag frame. Tag frame (pupil-apriltags): origin at tag centre, x right, y down, z into the tag (points down for a tag lying on a table)"},
                   open("tag_anchor.json", "w"), indent=2)
-        print("saved tag_anchor.json")
+        print("saved tag_anchor.json and tag_test.csv")
     sys.stdout.flush()
     os._exit(0)  # record3d's teardown segfaults; skip it
 

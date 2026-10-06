@@ -1,0 +1,41 @@
+running 40 s, looking for tag36h11 id 0 (0.1728 m)...
+t=  0.1s  tag seen   1x  dist 1.40 m  headset in tag frame: x=+0.57 y=+1.14 z=-0.59 m  tag in world: (-1.089,+0.137,-0.267)
+t=  1.1s  tag seen  11x  dist 1.55 m  headset in tag frame: x=+0.57 y=+1.24 z=-0.73 m  tag in world: (-1.092,+0.134,-0.266)
+t=  2.1s  tag seen  21x  dist 1.57 m  headset in tag frame: x=+0.58 y=+1.26 z=-0.73 m  tag in world: (-1.080,+0.140,-0.263)
+t=  3.1s  tag seen  31x  dist 1.57 m  headset in tag frame: x=+0.60 y=+1.25 z=-0.73 m  tag in world: (-1.056,+0.153,-0.258)
+t=  4.2s  tag seen  42x  dist 1.59 m  headset in tag frame: x=+0.61 y=+1.26 z=-0.76 m  tag in world: (-1.075,+0.142,-0.261)
+t=  5.2s  tag seen  52x  dist 1.59 m  headset in tag frame: x=+0.62 y=+1.23 z=-0.79 m  tag in world: (-1.072,+0.141,-0.258)
+t=  6.3s  tag seen  63x  dist 1.59 m  headset in tag frame: x=+0.62 y=+1.23 z=-0.79 m  tag in world: (-1.074,+0.140,-0.260)
+t=  7.3s  tag seen  73x  dist 1.58 m  headset in tag frame: x=+0.51 y=+1.26 z=-0.80 m  tag in world: (-1.065,+0.145,-0.257)
+t=  8.4s  tag seen  84x  dist 1.54 m  headset in tag frame: x=+0.31 y=+1.28 z=-0.81 m  tag in world: (-1.070,+0.145,-0.255)
+t=  9.5s  tag seen  95x  dist 1.47 m  headset in tag frame: x=+0.18 y=+1.21 z=-0.80 m  tag in world: (-1.071,+0.145,-0.255)
+t= 10.5s  tag seen 105x  dist 1.46 m  headset in tag frame: x=+0.08 y=+1.20 z=-0.82 m  tag in world: (-1.076,+0.142,-0.256)
+t= 11.6s  tag seen 116x  dist 1.46 m  headset in tag frame: x=-0.08 y=+1.20 z=-0.82 m  tag in world: (-1.078,+0.142,-0.256)
+t= 12.6s  tag seen 126x  dist 1.48 m  headset in tag frame: x=-0.19 y=+1.22 z=-0.81 m  tag in world: (-1.082,+0.140,-0.258)
+t= 13.6s  tag seen 136x  dist 1.39 m  headset in tag frame: x=-0.30 y=+1.11 z=-0.78 m  tag in world: (-1.072,+0.147,-0.249)
+t= 14.7s  tag seen 147x  dist 1.40 m  headset in tag frame: x=-0.40 y=+1.07 z=-0.80 m  tag in world: (-1.079,+0.143,-0.254)
+t= 15.8s  tag seen 158x  dist 1.42 m  headset in tag frame: x=-0.47 y=+1.05 z=-0.83 m  tag in world: (-1.072,+0.145,-0.245)
+t= 16.9s  tag seen 169x  dist 1.36 m  headset in tag frame: x=-0.47 y=+0.99 z=-0.81 m  tag in world: (-1.076,+0.143,-0.245)
+t= 17.9s  tag seen 179x  dist 1.31 m  headset in tag frame: x=-0.47 y=+0.93 z=-0.80 m  tag in world: (-1.075,+0.143,-0.245)
+t= 18.9s  tag seen 189x  dist 1.36 m  headset in tag frame: x=-0.45 y=+1.00 z=-0.81 m  tag in world: (-1.076,+0.142,-0.245)
+t= 20.0s  tag seen 200x  dist 1.39 m  headset in tag frame: x=-0.15 y=+1.11 z=-0.82 m  tag in world: (-1.076,+0.140,-0.245)
+t= 28.3s  tag seen 204x  dist 1.54 m  headset in tag frame: x=+0.29 y=+1.25 z=-0.85 m  tag in world: (-1.083,+0.129,-0.257)
+t= 29.3s  tag seen 214x  dist 1.44 m  headset in tag frame: x=+0.42 y=+1.12 z=-0.79 m  tag in world: (-1.062,+0.150,-0.254)
+t= 30.4s  tag seen 225x  dist 1.40 m  headset in tag frame: x=+0.58 y=+0.99 z=-0.79 m  tag in world: (-1.082,+0.137,-0.260)
+t= 31.4s  tag seen 235x  dist 1.41 m  headset in tag frame: x=+0.73 y=+0.94 z=-0.76 m  tag in world: (-1.086,+0.138,-0.261)
+t= 32.4s  tag seen 245x  dist 1.41 m  headset in tag frame: x=+0.80 y=+0.89 z=-0.76 m  tag in world: (-1.082,+0.139,-0.260)
+t= 33.5s  tag seen 256x  dist 1.41 m  headset in tag frame: x=+0.83 y=+0.85 z=-0.75 m  tag in world: (-1.079,+0.141,-0.261)
+t= 34.6s  tag seen 267x  dist 1.43 m  headset in tag frame: x=+0.72 y=+0.96 z=-0.79 m  tag in world: (-1.081,+0.139,-0.260)
+t= 35.7s  tag seen 278x  dist 1.44 m  headset in tag frame: x=+0.50 y=+1.07 z=-0.84 m  tag in world: (-1.072,+0.142,-0.258)
+t= 36.8s  tag seen 289x  dist 1.48 m  headset in tag frame: x=+0.27 y=+1.19 z=-0.83 m  tag in world: (-1.080,+0.140,-0.260)
+t= 37.9s  tag seen 300x  dist 1.51 m  headset in tag frame: x=+0.04 y=+1.26 z=-0.83 m  tag in world: (-1.064,+0.150,-0.252)
+t= 39.0s  tag seen 311x  dist 1.47 m  headset in tag frame: x=-0.21 y=+1.21 z=-0.81 m  tag in world: (-1.062,+0.151,-0.247)
+t= 40.0s  tag seen 321x  dist 1.41 m  headset in tag frame: x=-0.32 y=+1.12 z=-0.80 m  tag in world: (-1.065,+0.151,-0.245)
+
+=== SUMMARY (send me this) ===
+detections: 321 over 40 s, tag distance 1.31-1.61 m, headset moved ~5.0 m
+tag position spread: median 0.9 cm, 95th pct 2.1 cm, max 3.5 cm
+tag orientation spread: median 0.5 deg, 95th pct 1.1 deg
+look-away 1: tag out of view 8.0 s (from t=20.3 s); on return the tag estimate had moved 1.3 cm
+VERDICT: OK (2-5 cm): re-anchor whenever the tag is in view
+saved tag_anchor.json and tag_test.csv
