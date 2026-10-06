@@ -215,4 +215,4 @@ canvas*/
 output
 outputs
 *.nfs*
-*.json
+*.json*.r3d
